@@ -54,7 +54,11 @@ namespace Dotnet.Youtube.WatcherResponder
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddLogging();
-                    services.AddHostedService(o => new Worker(o.GetService<ILogger<Worker>>(), configuration.GetSection("YouTube:WatchChannel").Value));
+                    services.AddHostedService(o => 
+                        new Worker(
+                            o.GetService<ILogger<Worker>>(), 
+                            configuration.GetSection("YouTube:channels").Get<string[]>()
+                            ));
                 });
 
             return host;

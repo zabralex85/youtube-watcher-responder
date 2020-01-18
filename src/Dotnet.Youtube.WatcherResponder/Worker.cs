@@ -14,10 +14,10 @@ namespace Dotnet.Youtube.WatcherResponder
         private readonly YoutubeClient _youtubeClient;
         private readonly DataRepository _repository;
 
-        public Worker(ILogger<Worker> logger, string channelId)
+        public Worker(ILogger<Worker> logger, string[] channels)
         {
             _logger = logger;
-            _youtubeClient = new YoutubeClient(channelId);
+            _youtubeClient = new YoutubeClient(channels);
             _repository = new DataRepository();
         }
 

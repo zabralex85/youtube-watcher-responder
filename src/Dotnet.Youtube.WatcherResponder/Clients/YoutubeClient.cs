@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,12 +17,12 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
     public class YoutubeClient
     {
         private UserCredential _credential;
-        private readonly string _channelId;
+        private readonly string[] _channels;
         private YouTubeService _youtubeService;
 
-        public YoutubeClient(string channelId)
+        public YoutubeClient(string[] channels)
         {
-            _channelId = channelId;
+            _channels = channels;
             Task.Run(async () => await Init());
         }
 
@@ -63,7 +64,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
 
             foreach (Channel channel in channelsListResponse.Items)
             {
-                if(channel.Id != _channelId)
+                if(!_channels.Contains(channel.Id))
                     continue;
 
                 string uploadsListId = channel.ContentDetails.RelatedPlaylists.Uploads;
