@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
+using Serilog.Events;
 
 namespace Dotnet.Youtube.WatcherResponder
 {
@@ -12,9 +12,11 @@ namespace Dotnet.Youtube.WatcherResponder
     {
         public static void Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+
             Log.Logger = new LoggerConfiguration()
                 .Enrich.FromLogContext()
-                .WriteTo.Console()
+                .WriteTo.Console(LogEventLevel.Verbose)
                 .CreateLogger();
 
             try
@@ -53,12 +55,9 @@ namespace Dotnet.Youtube.WatcherResponder
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
                     services.AddLogging();
-                    services.AddHostedService(o => 
-                        new Worker(
-                            o.GetService<ILogger<Worker>>(), 
-                            configuration.GetSection("YouTube:channels").Get<string[]>()
-                            ));
+                    services.AddHostedService<Worker>();
                 });
 
             return host;

@@ -5,6 +5,7 @@ using Dotnet.Youtube.WatcherResponder.Clients;
 using Dotnet.Youtube.WatcherResponder.DataLayer;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Dotnet.Youtube.WatcherResponder
 {
@@ -14,10 +15,10 @@ namespace Dotnet.Youtube.WatcherResponder
         private readonly YoutubeClient _youtubeClient;
         private readonly DataRepository _repository;
 
-        public Worker(ILogger<Worker> logger, string[] channels)
+        public Worker(ILogger<Worker> logger, IOptions<AppSettings> options)
         {
             _logger = logger;
-            _youtubeClient = new YoutubeClient(channels);
+            _youtubeClient = new YoutubeClient(options);
             _repository = new DataRepository();
         }
 
@@ -30,29 +31,29 @@ namespace Dotnet.Youtube.WatcherResponder
                 {
                     if (!_repository.Exists(video))
                     {
-                        _logger.LogWarning("New Video: {Title}", video.Title);
+                        _logger.LogWarning("New Video: {Id}-{Title}", video.VideoId, video.Title);
 
                         var videoComments = await _youtubeClient.ListCommentsAsync(video);
                         if (videoComments.Count == 0)
                         {
-                            _logger.LogInformation("No Comments for : {VideoId}", video.VideoId);
+                            _logger.LogInformation("No Comments for : {VideoId}-{Title}", video.VideoId, video.Title);
                         }
 
                         foreach (var comment in videoComments)
                         {
                             if (_repository.Exists(comment))
                             {
-                                _logger.LogWarning("New Comment: {Id}", comment.Id);
+                                _logger.LogWarning("New Comment: {Id}, TextOriginal: {TextOriginal}", comment.Id, comment.TextOriginal);
                             }
                             else
                             {
-                                _logger.LogInformation("Old Comment: {Id}", comment.Id);
+                                _logger.LogInformation("Old Comment: {Id}, TextOriginal: {TextOriginal}", comment.Id, comment.TextOriginal);
                             }
                         }
                     }
                     else
                     {
-                        _logger.LogWarning("Old Video: {Title}", video.Title);
+                        _logger.LogWarning("Old Video: {Id}-{Title}", video.VideoId, video.Title);
                     }
                 }
 

@@ -11,18 +11,19 @@ using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
+using Microsoft.Extensions.Options;
 
 namespace Dotnet.Youtube.WatcherResponder.Clients
 {
     public class YoutubeClient
     {
         private UserCredential _credential;
-        private readonly string[] _channels;
         private YouTubeService _youtubeService;
+        private readonly AppSettings _settings;
 
-        public YoutubeClient(string[] channels)
+        public YoutubeClient(IOptions<AppSettings> settings)
         {
-            _channels = channels;
+            _settings = settings.Value;
             Task.Run(async () => await Init());
         }
 
@@ -51,45 +52,59 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
 
         public async Task<List<Models.Video>> ListVideosAsync()
         {
+            List<Models.Video> videos = new List<Models.Video>();
+
             while (_credential == null || _youtubeService == null)
             {
                 Thread.Sleep(1000);
             }
 
-            List<Models.Video> videos = new List<Models.Video>();
-            ChannelsResource.ListRequest channelsListRequest = _youtubeService.Channels.List("contentDetails");
-            channelsListRequest.Mine = true;
-
-            ChannelListResponse channelsListResponse = await channelsListRequest.ExecuteAsync();
-
-            foreach (Channel channel in channelsListResponse.Items)
+            foreach (var channel in _settings.YoutubeChannels)
             {
-                if(!_channels.Contains(channel.Id))
-                    continue;
+                var request = _youtubeService.Channels.List("contentDetails");
+                request.Id = channel;
 
-                string uploadsListId = channel.ContentDetails.RelatedPlaylists.Uploads;
-
-                string nextPageToken = "";
-                while (nextPageToken != null)
+                ChannelListResponse response = null;
+                try
                 {
-                    var playlistItemsListRequest = _youtubeService.PlaylistItems.List("snippet");
-                    playlistItemsListRequest.PlaylistId = uploadsListId;
-                    playlistItemsListRequest.MaxResults = 50;
-                    playlistItemsListRequest.PageToken = nextPageToken;
-
-                    var playlistItemsListResponse = await playlistItemsListRequest.ExecuteAsync();
-
-                    foreach (var playlistItem in playlistItemsListResponse.Items)
+                    response = await request.ExecuteAsync();
+                }
+                catch (Exception ex)
+                {
+                    if (ex.Message.Contains("Request had insufficient authentication scope"))
                     {
-                        videos.Add(new Models.Video
-                        {
-                            ListId = uploadsListId,
-                            Title = playlistItem.Snippet.Title,
-                            VideoId = playlistItem.Snippet.ResourceId.VideoId
-                        });
-                    }
+                        await _credential.RevokeTokenAsync(CancellationToken.None);
+                        await Init();
 
-                    nextPageToken = playlistItemsListResponse.NextPageToken;
+                        response = await request.ExecuteAsync();
+                    }
+                }
+
+                if (response == null) continue;
+
+                foreach (var channelItem in response.Items)
+                {
+                    string uploadsListId = channelItem.ContentDetails.RelatedPlaylists.Uploads;
+
+                    string nextPageToken = "";
+                    while (nextPageToken != null)
+                    {
+                        var playlistItemsListRequest = _youtubeService.PlaylistItems.List("snippet");
+                        playlistItemsListRequest.PlaylistId = uploadsListId;
+                        playlistItemsListRequest.MaxResults = 50;
+                        playlistItemsListRequest.PageToken = nextPageToken;
+
+                        var playlistItemsListResponse = await playlistItemsListRequest.ExecuteAsync();
+
+                        videos.AddRange(playlistItemsListResponse.Items.Select(video => new Models.Video
+                        {
+                            ListId = uploadsListId, 
+                            Title = video.Snippet.Title,
+                            VideoId = video.Snippet.ResourceId.VideoId
+                        }));
+
+                        nextPageToken = playlistItemsListResponse.NextPageToken;
+                    }
                 }
             }
 
@@ -104,8 +119,9 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
             while (nextPageToken != null)
             {
                 var request = _youtubeService.CommentThreads.List("snippet");
-                request.MaxResults = 50;
+                request.MaxResults = 100;
                 request.VideoId = video.VideoId;
+                request.TextFormat = CommentThreadsResource.ListRequest.TextFormatEnum.PlainText;
                 request.PageToken = nextPageToken;
 
                 CommentThreadListResponse response = null;
@@ -125,24 +141,19 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                     }
                 }
 
-                if (response != null)
-                {
-                    foreach (var thread in response.Items)
-                    {
-                        resultList.Add(new VideoComment
-                        {
-                            Id = thread.Snippet.TopLevelComment.Id,
-                            AuthorDisplayName = thread.Snippet.TopLevelComment.Snippet.AuthorDisplayName,
-                            PublishedAt = thread.Snippet.TopLevelComment.Snippet.PublishedAt,
-                            ETag = thread.Snippet.TopLevelComment.Snippet.ETag,
-                            HtmlTextDisplay = thread.Snippet.TopLevelComment.Snippet.TextDisplay,
-                            TextOriginal = thread.Snippet.TopLevelComment.Snippet.TextOriginal,
-                            VideoId = video.VideoId
-                        });
-                    }
+                if (response == null) continue;
 
-                    nextPageToken = response.NextPageToken;
-                }
+                resultList.AddRange(response.Items.Select(thread => new VideoComment
+                {
+                    Id = thread.Snippet.TopLevelComment.Id,
+                    AuthorDisplayName = thread.Snippet.TopLevelComment.Snippet.AuthorDisplayName,
+                    PublishedAt = thread.Snippet.TopLevelComment.Snippet.PublishedAt,
+                    ETag = thread.Snippet.TopLevelComment.Snippet.ETag,
+                    TextOriginal = thread.Snippet.TopLevelComment.Snippet.TextOriginal,
+                    VideoId = video.VideoId
+                }));
+
+                nextPageToken = response.NextPageToken;
             }
 
             return resultList;
