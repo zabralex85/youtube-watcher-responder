@@ -13,7 +13,6 @@ using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Video = Dotnet.Youtube.WatcherResponder.Models.Video;
 
 namespace Dotnet.Youtube.WatcherResponder.Clients
 {
@@ -66,7 +65,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 Thread.Sleep(1000);
             }
 
-            _logger.LogWarning(JsonSerializer.Serialize(_settings));
+            _logger.LogInformation(JsonSerializer.Serialize(_settings));
 
             foreach (var channel in _settings.YoutubeChannels)
             {
@@ -78,9 +77,11 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 {
                     response = await request.ExecuteAsync();
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    if (ex.Message.Contains("Request had insufficient authentication scope"))
+                    _logger.LogError(e.Message);
+
+                    if (e.Message.Contains("Request had insufficient authentication scope"))
                     {
                         await _credential.RevokeTokenAsync(CancellationToken.None);
                         await Init();
@@ -140,9 +141,11 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 {
                     response = await request.ExecuteAsync();
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    if (ex.Message.Contains("Request had insufficient authentication scope"))
+                    _logger.LogError(e.Message);
+
+                    if (e.Message.Contains("Request had insufficient authentication scope"))
                     {
                         await _credential.RevokeTokenAsync(CancellationToken.None);
                         await Init();
@@ -228,7 +231,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
             };
         }
 
-        public async Task<IEnumerable<Video>> ListVideosBySearchAsync(DateTime fromDate)
+        public async Task<IEnumerable<Models.Video>> ListVideosBySearchAsync(DateTime fromDate)
         {
             List<Models.Video> videos = new List<Models.Video>();
 
@@ -237,7 +240,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 Thread.Sleep(1000);
             }
 
-            _logger.LogWarning(JsonSerializer.Serialize(_settings));
+            _logger.LogInformation(JsonSerializer.Serialize(_settings));
 
 
             foreach (var channel in _settings.YoutubeChannels)
@@ -254,6 +257,8 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex.Message);
+
                     if (ex.Message.Contains("Request had insufficient authentication scope"))
                     {
                         await _credential.RevokeTokenAsync(CancellationToken.None);

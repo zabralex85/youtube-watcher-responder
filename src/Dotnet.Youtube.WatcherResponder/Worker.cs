@@ -59,6 +59,8 @@ namespace Dotnet.Youtube.WatcherResponder
                     {
                         var comment = await _youtubeClient.AddCommentForVideo(video);
                         _repository.AddAuthorComment(comment);
+
+                        _logger.LogInformation("Comment added on video {VideoId}, {TextOriginal}", video.VideoId, comment.TextOriginal);
                     }
                 }
 
