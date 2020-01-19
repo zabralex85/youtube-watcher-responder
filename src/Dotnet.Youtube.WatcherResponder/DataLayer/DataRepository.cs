@@ -13,7 +13,7 @@ namespace Dotnet.Youtube.WatcherResponder.DataLayer
         public DataRepository()
         {
             var path = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-            _engine = new DBreezeEngine(path + @"\db.dat");
+            _engine = new DBreezeEngine(path + @"\data");
         }
 
         public bool Exists<T>(T obj)
