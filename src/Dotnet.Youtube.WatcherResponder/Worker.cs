@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dotnet.Youtube.WatcherResponder.Clients;
@@ -31,34 +32,29 @@ namespace Dotnet.Youtube.WatcherResponder
                 var videos = await _youtubeClient.ListVideosAsync();
                 foreach (var video in videos)
                 {
-                    if (!_repository.Exists(video))
+                    if (_repository.CommentExists(video, _options.AuthorDisplayName)) continue;
+
+                    _logger.LogInformation("New Video: {Id}-{Title}", video.VideoId, video.Title);
+
+                    var videoComments = await _youtubeClient.ListCommentsAsync(video);
+                    if (videoComments.Count == 0)
                     {
-                        _logger.LogInformation("New Video: {Id}-{Title}", video.VideoId, video.Title);
-
-                        var videoComments = await _youtubeClient.ListCommentsAsync(video);
-                        if (videoComments.Count == 0)
-                        {
-                            _logger.LogInformation("No Comments for : {VideoId}-{Title}", video.VideoId, video.Title);
-                        }
-
-                        foreach (var comment in videoComments)
-                        {
-                            if(!comment.AuthorDisplayName.Contains(_options.AuthorDisplayName))
-                                continue;
-
-                            if (_repository.Exists(comment))
-                            {
-                                _logger.LogInformation("New Comment: {Id}, TextOriginal: {TextOriginal}", comment.Id, comment.TextOriginal);
-                            }
-                            else
-                            {
-                                _logger.LogInformation("Old Comment: {Id}, TextOriginal: {TextOriginal}", comment.Id, comment.TextOriginal);
-                            }
-                        }
+                        _logger.LogInformation("No Comments for : {VideoId}-{Title}", video.VideoId, video.Title);
                     }
-                    else
+
+                    bool authorCommentFound = false;
+                    foreach (var comment in videoComments
+                        .Where(comment => comment.AuthorDisplayName
+                            .Contains(_options.AuthorDisplayName)))
                     {
-                        _logger.LogInformation("Old Video: {Id}-{Title}", video.VideoId, video.Title);
+                        authorCommentFound = true;
+                        _repository.AddAuthorComment(video, comment);
+                    }
+
+                    if (!authorCommentFound)
+                    {
+                        var comment = await _youtubeClient.AddCommentForVideo(video);
+                        _repository.AddAuthorComment(video, comment);
                     }
                 }
 

@@ -15,6 +15,7 @@ using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Video = Dotnet.Youtube.WatcherResponder.Models.Video;
 
 namespace Dotnet.Youtube.WatcherResponder.Clients
 {
@@ -24,11 +25,14 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
         private UserCredential _credential;
         private YouTubeService _youtubeService;
         private readonly AppSettings _settings;
+        private readonly Random _random;
 
         public YoutubeClient(ILogger<YoutubeClient> logger, IOptions<AppSettings> settings)
         {
             _logger = logger;
             _settings = settings.Value;
+            _random = new Random();
+
             Task.Run(async () => await Init());
         }
 
@@ -107,7 +111,8 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                         {
                             ListId = uploadsListId, 
                             Title = video.Snippet.Title,
-                            VideoId = video.Snippet.ResourceId.VideoId
+                            VideoId = video.Snippet.ResourceId.VideoId,
+                            ChannelId = channel
                         }));
 
                         nextPageToken = playlistItemsListResponse.NextPageToken;
@@ -164,6 +169,51 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
             }
 
             return resultList;
+        }
+
+        public async Task<VideoComment> AddCommentForVideo(Models.Video video)
+        {
+            string reaction = _settings.Reactions.Count != 0
+                ? _settings.Reactions[_random.Next(0, _settings.Reactions.Count - 1)]
+                : "Best ever video!";
+
+            var request = _youtubeService.CommentThreads.Insert(new CommentThread()
+            {
+                Snippet = new CommentThreadSnippet()
+                {
+                    ChannelId = video.ChannelId,
+                    VideoId = video.VideoId,
+                    TopLevelComment = new Comment()
+                    {
+                        Snippet = new CommentSnippet()
+                        {
+                            TextOriginal = reaction
+                        }
+                    }
+                }
+            }, "snippet");
+
+            CommentThread response;
+
+            try
+            {
+                response = await request.ExecuteAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.Message);
+                return null;
+            }
+
+            return new VideoComment
+            {
+                Id = response.Snippet.TopLevelComment.Id,
+                AuthorDisplayName = response.Snippet.TopLevelComment.Snippet.AuthorDisplayName,
+                PublishedAt = response.Snippet.TopLevelComment.Snippet.PublishedAt,
+                ETag = response.Snippet.TopLevelComment.Snippet.ETag,
+                TextOriginal = response.Snippet.TopLevelComment.Snippet.TextOriginal,
+                VideoId = video.VideoId
+            };
         }
     }
 }

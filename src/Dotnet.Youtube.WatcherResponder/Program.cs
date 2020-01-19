@@ -19,7 +19,8 @@ namespace Dotnet.Youtube.WatcherResponder
 
             Log.Logger = new LoggerConfiguration()
                 .Enrich.FromLogContext()
-                .WriteTo.Console(LogEventLevel.Verbose)
+                .WriteTo.Console(LogEventLevel.Information)
+                .WriteTo.File("log-.txt", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel:LogEventLevel.Warning)
                 .CreateLogger();
 
             try
