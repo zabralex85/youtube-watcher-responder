@@ -29,7 +29,7 @@ namespace Dotnet.Youtube.WatcherResponder
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                var videos = await _youtubeClient.ListVideosAsync();
+                var videos = await _youtubeClient.ListVideosBySearchAsync(fromDate:DateTime.UtcNow.AddDays(-1 * _options.VideosDaysFrom));
                 foreach (var video in videos)
                 {
                     if (_repository.CommentExists(video.VideoId))

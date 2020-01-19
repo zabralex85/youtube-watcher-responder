@@ -13,6 +13,7 @@ using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Video = Dotnet.Youtube.WatcherResponder.Models.Video;
 
 namespace Dotnet.Youtube.WatcherResponder.Clients
 {
@@ -56,7 +57,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
             }
         }
 
-        public async Task<List<Models.Video>> ListVideosAsync()
+        public async Task<List<Models.Video>> ListVideosByChannelsAsync()
         {
             List<Models.Video> videos = new List<Models.Video>();
 
@@ -109,7 +110,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                             ListId = uploadsListId, 
                             Title = video.Snippet.Title,
                             VideoId = video.Snippet.ResourceId.VideoId,
-                            ChannelId = channel
+                            ChannelId = video.Snippet.ChannelId
                         }));
 
                         nextPageToken = playlistItemsListResponse.NextPageToken;
@@ -225,6 +226,58 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 TextOriginal = response.Snippet.TopLevelComment.Snippet.TextOriginal,
                 VideoId = video.VideoId
             };
+        }
+
+        public async Task<IEnumerable<Video>> ListVideosBySearchAsync(DateTime fromDate)
+        {
+            List<Models.Video> videos = new List<Models.Video>();
+
+            while (_credential == null || _youtubeService == null)
+            {
+                Thread.Sleep(1000);
+            }
+
+            _logger.LogWarning(JsonSerializer.Serialize(_settings));
+
+
+            foreach (var channel in _settings.YoutubeChannels)
+            {
+                var request = _youtubeService.Search.List("snippet");
+                request.ChannelId = channel;
+                request.Order = SearchResource.ListRequest.OrderEnum.Date;
+                request.PublishedAfter = fromDate;
+
+                SearchListResponse response = null;
+                try
+                {
+                    response = await request.ExecuteAsync();
+                }
+                catch (Exception ex)
+                {
+                    if (ex.Message.Contains("Request had insufficient authentication scope"))
+                    {
+                        await _credential.RevokeTokenAsync(CancellationToken.None);
+                        await Init();
+
+                        response = await request.ExecuteAsync();
+                    }
+                }
+
+                if (response == null) continue;
+
+                videos.AddRange(response.Items
+                    .Where(s => !string.IsNullOrEmpty(s.Id.VideoId))
+                    .Select(video => new Models.Video
+                    {
+                        ListId = video.Id.PlaylistId,
+                        Title = video.Snippet.Title,
+                        VideoId = video.Id.VideoId,
+                        ChannelId = video.Snippet.ChannelId
+                    }));
+            }
+
+
+            return videos;
         }
     }
 }
