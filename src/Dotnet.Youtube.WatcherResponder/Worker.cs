@@ -32,7 +32,11 @@ namespace Dotnet.Youtube.WatcherResponder
                 var videos = await _youtubeClient.ListVideosAsync();
                 foreach (var video in videos)
                 {
-                    if (_repository.CommentExists(video.VideoId)) continue;
+                    if (_repository.CommentExists(video.VideoId))
+                    {
+                        _logger.LogInformation("Comment found on video {VideoId}", video.VideoId);
+                        continue;
+                    }
 
                     _logger.LogInformation("New Video: {Id}-{Title}", video.VideoId, video.Title);
 

@@ -173,9 +173,23 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
 
         public async Task<VideoComment> AddCommentForVideo(Models.Video video)
         {
-            string reaction = _settings.Reactions.Count != 0
-                ? _settings.Reactions[_random.Next(0, _settings.Reactions.Count - 1)]
-                : "Best ever video!";
+            string reaction;
+
+            if (_settings.Reactions == null)
+            {
+                reaction = "Best ever video!";
+            }
+            else
+            {
+                if (_settings.Reactions.Count != 0)
+                {
+                    reaction = _settings.Reactions[_random.Next(0, _settings.Reactions.Count - 1)];
+                }
+                else
+                {
+                    reaction = "Best ever video!";
+                }
+            }
 
             var request = _youtubeService.CommentThreads.Insert(new CommentThread()
             {
