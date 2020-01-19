@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Text.Json;
 using DBreeze;
 using DBreeze.Utils;
-using Dotnet.Youtube.WatcherResponder.Models;
 
 namespace Dotnet.Youtube.WatcherResponder.DataLayer
 {

@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using DBreeze.Utils;
 using Dotnet.Youtube.WatcherResponder.Models;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
@@ -15,7 +13,6 @@ using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Video = Dotnet.Youtube.WatcherResponder.Models.Video;
 
 namespace Dotnet.Youtube.WatcherResponder.Clients
 {
