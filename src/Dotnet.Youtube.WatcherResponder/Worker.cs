@@ -32,7 +32,7 @@ namespace Dotnet.Youtube.WatcherResponder
                 var videos = await _youtubeClient.ListVideosAsync();
                 foreach (var video in videos)
                 {
-                    if (_repository.CommentExists(video, _options.AuthorDisplayName)) continue;
+                    if (_repository.CommentExists(video.VideoId)) continue;
 
                     _logger.LogInformation("New Video: {Id}-{Title}", video.VideoId, video.Title);
 
@@ -48,13 +48,13 @@ namespace Dotnet.Youtube.WatcherResponder
                             .Contains(_options.AuthorDisplayName)))
                     {
                         authorCommentFound = true;
-                        _repository.AddAuthorComment(video, comment);
+                        _repository.AddAuthorComment(comment);
                     }
 
                     if (!authorCommentFound)
                     {
                         var comment = await _youtubeClient.AddCommentForVideo(video);
-                        _repository.AddAuthorComment(video, comment);
+                        _repository.AddAuthorComment(comment);
                     }
                 }
 
