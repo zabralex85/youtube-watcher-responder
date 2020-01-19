@@ -1,4 +1,7 @@
 using System;
+using System.IO;
+using Dotnet.Youtube.WatcherResponder.Clients;
+using Dotnet.Youtube.WatcherResponder.DataLayer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -37,8 +40,13 @@ namespace Dotnet.Youtube.WatcherResponder
         public static IHostBuilder CreateHostBuilder(string[] args)
         {
             var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+            if (string.IsNullOrEmpty(envName))
+            {
+                envName = "Development";
+            }
 
             var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
                 .AddEnvironmentVariables()
                 .AddCommandLine(args)
                 .AddJsonFile("appsettings.json")
@@ -57,6 +65,8 @@ namespace Dotnet.Youtube.WatcherResponder
                 {
                     services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
                     services.AddLogging();
+                    services.AddSingleton<DataRepository>();
+                    services.AddSingleton<YoutubeClient>();
                     services.AddHostedService<Worker>();
                 });
 

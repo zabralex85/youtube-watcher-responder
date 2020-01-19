@@ -14,24 +14,26 @@ namespace Dotnet.Youtube.WatcherResponder
         private readonly ILogger<Worker> _logger;
         private readonly YoutubeClient _youtubeClient;
         private readonly DataRepository _repository;
+        private readonly AppSettings _options;
 
-        public Worker(ILogger<Worker> logger, IOptions<AppSettings> options)
+        public Worker(IServiceProvider serviceProvider, ILogger<Worker> logger, IOptions<AppSettings> options)
         {
+            _options = options.Value;
             _logger = logger;
-            _youtubeClient = new YoutubeClient(options);
-            _repository = new DataRepository();
+            _youtubeClient = (YoutubeClient) serviceProvider.GetService(typeof(YoutubeClient));
+            _repository = (DataRepository)serviceProvider.GetService(typeof(DataRepository));
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            //while (!stoppingToken.IsCancellationRequested)
-            //{
+            while (!stoppingToken.IsCancellationRequested)
+            {
                 var videos = await _youtubeClient.ListVideosAsync();
                 foreach (var video in videos)
                 {
                     if (!_repository.Exists(video))
                     {
-                        _logger.LogWarning("New Video: {Id}-{Title}", video.VideoId, video.Title);
+                        _logger.LogInformation("New Video: {Id}-{Title}", video.VideoId, video.Title);
 
                         var videoComments = await _youtubeClient.ListCommentsAsync(video);
                         if (videoComments.Count == 0)
@@ -41,9 +43,12 @@ namespace Dotnet.Youtube.WatcherResponder
 
                         foreach (var comment in videoComments)
                         {
+                            if(!comment.AuthorDisplayName.Contains(_options.AuthorDisplayName))
+                                continue;
+
                             if (_repository.Exists(comment))
                             {
-                                _logger.LogWarning("New Comment: {Id}, TextOriginal: {TextOriginal}", comment.Id, comment.TextOriginal);
+                                _logger.LogInformation("New Comment: {Id}, TextOriginal: {TextOriginal}", comment.Id, comment.TextOriginal);
                             }
                             else
                             {
@@ -53,12 +58,12 @@ namespace Dotnet.Youtube.WatcherResponder
                     }
                     else
                     {
-                        _logger.LogWarning("Old Video: {Id}-{Title}", video.VideoId, video.Title);
+                        _logger.LogInformation("Old Video: {Id}-{Title}", video.VideoId, video.Title);
                     }
                 }
 
-            //    await Task.Delay(30000, stoppingToken);
-            //}
+                await Task.Delay(_options.Timeout * 1000, stoppingToken);
+            }
         }
     }
 }

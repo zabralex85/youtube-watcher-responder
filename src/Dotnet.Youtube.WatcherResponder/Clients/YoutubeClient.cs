@@ -3,26 +3,31 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DBreeze.Utils;
 using Dotnet.Youtube.WatcherResponder.Models;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Dotnet.Youtube.WatcherResponder.Clients
 {
     public class YoutubeClient
     {
+        private readonly ILogger<YoutubeClient> _logger;
         private UserCredential _credential;
         private YouTubeService _youtubeService;
         private readonly AppSettings _settings;
 
-        public YoutubeClient(IOptions<AppSettings> settings)
+        public YoutubeClient(ILogger<YoutubeClient> logger, IOptions<AppSettings> settings)
         {
+            _logger = logger;
             _settings = settings.Value;
             Task.Run(async () => await Init());
         }
@@ -58,6 +63,8 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
             {
                 Thread.Sleep(1000);
             }
+
+            _logger.LogWarning(JsonSerializer.Serialize(_settings));
 
             foreach (var channel in _settings.YoutubeChannels)
             {
