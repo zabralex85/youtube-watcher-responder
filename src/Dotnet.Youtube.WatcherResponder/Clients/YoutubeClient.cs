@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Dotnet.Youtube.WatcherResponder.Models;
+using Dotnet.Youtube.WatcherResponder.Utils;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
@@ -28,7 +29,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
         {
             _logger = logger;
             _settings = settings.Value;
-            _random = new Random();
+            _random = RandomProvider.GetThreadRandom();
 
             Task.Run(async () => await Init());
         }
@@ -192,21 +193,22 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 }
             }
 
-            var request = _youtubeService.CommentThreads.Insert(new CommentThread()
-            {
-                Snippet = new CommentThreadSnippet()
+            var request = _youtubeService.CommentThreads.Insert(
+                new CommentThread
                 {
-                    ChannelId = video.ChannelId,
-                    VideoId = video.VideoId,
-                    TopLevelComment = new Comment()
+                    Snippet = new CommentThreadSnippet
                     {
-                        Snippet = new CommentSnippet()
+                        ChannelId = video.ChannelId,
+                        VideoId = video.VideoId,
+                        TopLevelComment = new Comment
                         {
-                            TextOriginal = reaction
+                            Snippet = new CommentSnippet
+                            {
+                                TextOriginal = reaction
+                            }
                         }
                     }
-                }
-            }, "snippet");
+                }, "snippet");
 
             CommentThread response;
 
