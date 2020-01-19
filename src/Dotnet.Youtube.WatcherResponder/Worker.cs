@@ -38,21 +38,23 @@ namespace Dotnet.Youtube.WatcherResponder
                         continue;
                     }
 
-                    _logger.LogInformation("New Video: {Id}-{Title}", video.VideoId, video.Title);
-
-                    var videoComments = await _youtubeClient.ListCommentsAsync(video);
-                    if (videoComments.Count == 0)
-                    {
-                        _logger.LogInformation("No Comments for : {VideoId}-{Title}", video.VideoId, video.Title);
-                    }
-
                     bool authorCommentFound = false;
-                    foreach (var comment in videoComments
-                        .Where(comment => comment.AuthorDisplayName
-                            .Contains(_options.AuthorDisplayName)))
+
+                    if (_options.CheckCommentOnVideo)
                     {
-                        authorCommentFound = true;
-                        _repository.AddAuthorComment(comment);
+                        var videoComments = await _youtubeClient.ListCommentsAsync(video);
+                        if (videoComments.Count == 0)
+                        {
+                            _logger.LogInformation("No Comments for : {VideoId}-{Title}", video.VideoId, video.Title);
+                        }
+
+                        foreach (var comment in videoComments
+                            .Where(comment => comment.AuthorDisplayName
+                                .Contains(_options.AuthorDisplayName)))
+                        {
+                            authorCommentFound = true;
+                            _repository.AddAuthorComment(comment);
+                        }
                     }
 
                     if (!authorCommentFound)
