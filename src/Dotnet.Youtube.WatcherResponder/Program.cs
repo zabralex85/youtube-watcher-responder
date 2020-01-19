@@ -45,6 +45,8 @@ namespace Dotnet.Youtube.WatcherResponder
                 envName = "Development";
             }
 
+            Log.Information("Environment: {envName}", envName);
+
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddEnvironmentVariables()
