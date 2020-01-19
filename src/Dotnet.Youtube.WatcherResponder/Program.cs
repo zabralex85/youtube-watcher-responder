@@ -43,6 +43,7 @@ namespace Dotnet.Youtube.WatcherResponder
             if (string.IsNullOrEmpty(envName))
             {
                 envName = "Development";
+                Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", envName);
             }
 
             Log.Information("Environment: {envName}", envName);
