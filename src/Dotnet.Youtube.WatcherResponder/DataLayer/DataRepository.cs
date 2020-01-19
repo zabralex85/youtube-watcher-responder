@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text.Json;
 using DBreeze;
 using DBreeze.Utils;
+using Dotnet.Youtube.WatcherResponder.Models;
 
 namespace Dotnet.Youtube.WatcherResponder.DataLayer
 {
@@ -15,6 +17,21 @@ namespace Dotnet.Youtube.WatcherResponder.DataLayer
         {
             var path = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
             _engine = new DBreezeEngine(path + @"\data");
+
+            //Setting default serializer for DBreeze
+            //DBreeze.Utils.CustomSerializator.ByteArraySerializator = ProtobufSerializer.SerializeProtobuf;
+            //DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator = ProtobufSerializer.DeserializeProtobuf;
+
+            DBreeze.Utils.CustomSerializator.ByteArraySerializator = (object o) =>
+            {
+                return JsonSerializer.Serialize(o).To_UTF8Bytes();
+            };
+
+            DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator = (byte[] bt, Type t) =>
+            {
+                return JsonSerializer.Deserialize(bt, t);
+            };
+
         }
 
         public bool CommentExists(string videoId)
@@ -23,14 +40,15 @@ namespace Dotnet.Youtube.WatcherResponder.DataLayer
 
             using (var t = _engine.GetTransaction())
             {
-                foreach (var doc in t.TextSearch("TS_Video").BlockAnd(videoId).GetDocumentIDs())
+                t.SynchronizeTables("VideoComment");
+
+                var obj = t
+                    .Select<byte[], byte[]>("VideoComment", 1.ToIndex(videoId))
+                    .ObjectGet<Models.VideoComment>();
+
+                if (obj != null)
                 {
-                    var obj = t.Select<byte[], byte[]>("VideoComment", 1.ToIndex(doc)).ObjectGet<Models.VideoComment>();
-                    if (obj != null)
-                    {
-                        Console.WriteLine(obj.Entity.Id + " " + obj.Entity.VideoId);
-                        exists = true;
-                    }
+                    exists = true;
                 }
             }
 
@@ -43,7 +61,7 @@ namespace Dotnet.Youtube.WatcherResponder.DataLayer
             {
                 //Documentation https://goo.gl/Kwm9aq
                 //This line with a list of tables we need in case if we modify more than 1 table inside of transaction
-                // t.SynchronizeTables("video_comment");
+                t.SynchronizeTables("VideoComment");
 
                 //Documentation https://goo.gl/YtWnAJ
                 t.ObjectInsert("VideoComment", new DBreeze.Objects.DBreezeObject<Models.VideoComment>
@@ -52,20 +70,37 @@ namespace Dotnet.Youtube.WatcherResponder.DataLayer
                     Entity = comment,
                     Indexes = new List<DBreeze.Objects.DBreezeIndex>
                     {
-                        //to Get customer by ID
-                        new DBreeze.Objects.DBreezeIndex(1, comment.Id) {PrimaryIndex = true},
+                        new DBreeze.Objects.DBreezeIndex(1, comment.VideoId) {PrimaryIndex = true},
                     }
                 }, false);
 
-                //Documentation https://goo.gl/s8vtRG
-                //Setting text search index. We will store text-search 
-                //indexes concerning customers in table "TS_Customers".
-                //Second parameter is a reference to the customer ID.
-                t.TextInsert("TS_Video", comment.VideoId.ToBytes(), comment.VideoId);
 
                 //Committing entry
                 t.Commit();
             }
         }
     }
+
+    //[ProtoBuf.ProtoContract]
+    //public class Customer
+    //{
+    //    [ProtoBuf.ProtoMember(1, IsRequired = true)]
+    //    public long Id { get; set; }
+
+    //    [ProtoBuf.ProtoMember(2, IsRequired = true)]
+    //    public string Name { get; set; }
+    //}
+
+    //public class ProtobufSerializer
+    //{
+    //    public static byte[] SerializeProtobuf(object arg)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    public static object DeserializeProtobuf(byte[] arg1, Type arg2)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+    //}
 }
