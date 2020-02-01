@@ -3,3 +3,5 @@ v16
 netcoreapp3.1
 obj
 client_secrets.json
+*.user
+*.txt
