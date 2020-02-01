@@ -1,6 +1,6 @@
 # Youtube.Watcher.Responder
 
-[![<ORG_NAME>](https://circleci.com/github/zabralex85/youtube-watcher-responder.svg?style=svg)](https://github.com/zabralex85/youtube-watcher-responder)
+[![CircleCI](https://circleci.com/gh/zabralex85/youtube-watcher-responder.svg?style=svg)](https://circleci.com/gh/zabralex85/youtube-watcher-responder)
 
 Project for autocomment on new video on channels.
 
