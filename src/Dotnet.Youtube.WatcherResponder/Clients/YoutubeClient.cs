@@ -76,6 +76,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 ChannelListResponse response = null;
                 try
                 {
+                    _logger.LogInformation("_youtubeService.Channels.List");
                     response = await request.ExecuteAsync();
                 }
                 catch (Exception e)
@@ -87,6 +88,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                         await _credential.RevokeTokenAsync(CancellationToken.None);
                         await Init();
 
+                        _logger.LogInformation("_youtubeService.Channels.List");
                         response = await request.ExecuteAsync();
                     }
                 }
@@ -105,6 +107,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                         playlistItemsListRequest.MaxResults = 50;
                         playlistItemsListRequest.PageToken = nextPageToken;
 
+                        _logger.LogInformation("playlistItemsListResponse");
                         var playlistItemsListResponse = await playlistItemsListRequest.ExecuteAsync();
 
                         videos.AddRange(playlistItemsListResponse.Items.Select(video => new Models.Video
@@ -140,6 +143,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
 
                 try
                 {
+                    _logger.LogInformation("list comment");
                     response = await request.ExecuteAsync();
                 }
                 catch (Exception e)
@@ -151,6 +155,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                         await _credential.RevokeTokenAsync(CancellationToken.None);
                         await Init();
 
+                        _logger.LogInformation("list comment");
                         response = await request.ExecuteAsync();
                     }
                 }
@@ -214,6 +219,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
 
             try
             {
+                _logger.LogTrace("Added comment {reaction}", reaction);
                 response = await request.ExecuteAsync();
             }
             catch (Exception e)
@@ -242,7 +248,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 Thread.Sleep(1000);
             }
 
-            _logger.LogInformation(JsonSerializer.Serialize(_settings));
+            _logger.LogTrace(JsonSerializer.Serialize(_settings));
 
 
             foreach (var channel in _settings.YoutubeChannels)
@@ -255,6 +261,7 @@ namespace Dotnet.Youtube.WatcherResponder.Clients
                 SearchListResponse response = null;
                 try
                 {
+                    _logger.LogTrace("Analyze channel {channel}", channel);
                     response = await request.ExecuteAsync();
                 }
                 catch (Exception ex)

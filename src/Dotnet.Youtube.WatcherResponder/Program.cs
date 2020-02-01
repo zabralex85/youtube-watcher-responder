@@ -19,7 +19,10 @@ namespace Dotnet.Youtube.WatcherResponder
             Log.Logger = new LoggerConfiguration()
                 .Enrich.FromLogContext()
                 .WriteTo.Console(LogEventLevel.Information)
-                .WriteTo.File("log-.txt", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel:LogEventLevel.Warning)
+                .WriteTo.File(
+                    "log-.txt", 
+                    rollingInterval: RollingInterval.Day, 
+                    restrictedToMinimumLevel:LogEventLevel.Verbose)
                 .CreateLogger();
 
             try
@@ -69,6 +72,7 @@ namespace Dotnet.Youtube.WatcherResponder
                     services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
                     services.AddLogging();
                     services.AddSingleton<DataRepository>();
+                    services.AddSingleton<RssClient>();
                     services.AddSingleton<YoutubeClient>();
                     services.AddHostedService<Worker>();
                 });

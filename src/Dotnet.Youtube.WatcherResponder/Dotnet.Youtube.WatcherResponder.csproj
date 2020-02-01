@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CodeHollow.FeedReader" Version="1.2.1" />
     <PackageReference Include="DBreeze" Version="1.95.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.43.0.1834" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.1" />

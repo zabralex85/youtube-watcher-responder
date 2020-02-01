@@ -10,5 +10,7 @@ namespace Dotnet.Youtube.WatcherResponder
         public List<string> Reactions { get; set; }
         public int VideosDaysFrom { get; set; }
         public bool CheckCommentOnVideo { get; set; }
+        public bool CheckViaRss { get; set; }
+        public string YoutubeRssLinkLeftPart { get; set; }
     }
 }
