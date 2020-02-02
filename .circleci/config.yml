@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@1.0.0
+  win: circleci/windows@2.4.0
 
 jobs:
   build:
@@ -10,23 +10,16 @@ jobs:
       shell: powershell.exe
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - dotnet-packages-v1-{{ checksum "Dotnet.Youtube.WatcherResponder.sln" }}
-      - run:
-          name: "Install project dependencies"
-          command: dotnet.exe restore Dotnet.Youtube.WatcherResponder.sln
-          working_directory: src
-          
-      - save_cache:
-          paths:
-            - C:\Users\circleci\.nuget\packages
-          key: dotnet-packages-v1-{{ checksum "Dotnet.Youtube.WatcherResponder.sln" }}
 
       - run:
+          name: "Install project dependencies"
+          command: dotnet.exe restore src\Dotnet.Youtube.WatcherResponder.sln
+          working_directory: src
+          
+      - run:
           name: "Run Build step"
-          command: dotnet.exe publish Dotnet.Youtube.WatcherResponder.sln -c Release -r win10-x64
+          command: dotnet.exe publish src\Dotnet.Youtube.WatcherResponder.sln -c Release -r win10-x64
           working_directory: src
 
       - store_artifacts:
-          path: .\bin\Release\netcoreapp2.1\win10-x64\publish\Dotnet.Youtube.WatcherResponder.exe
+          path: .\bin\Release\netcoreapp3.1\win10-x64\publish\Dotnet.Youtube.WatcherResponder.exe
