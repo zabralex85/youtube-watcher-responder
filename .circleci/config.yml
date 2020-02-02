@@ -1,25 +1,19 @@
-version: 2.1
-
-orbs:
-  win: circleci/windows@2.4.0
-
+version: 2.0
 jobs:
-  build:
-    executor:
-      name: win/vs2019
-      shell: powershell.exe
-    steps:
-      - checkout
-
-      - run:
-          name: "Install project dependencies"
-          command: dotnet.exe restore src\Dotnet.Youtube.WatcherResponder.sln
-          working_directory: src
-          
-      - run:
-          name: "Run Build step"
-          command: dotnet.exe publish src\Dotnet.Youtube.WatcherResponder.sln -c Release -r win10-x64
-          working_directory: src
-
-      - store_artifacts:
-          path: .\bin\Release\netcoreapp3.1\win10-x64\publish\Dotnet.Youtube.WatcherResponder.exe
+ build:
+   docker:
+     - image: mcr.microsoft.com/dotnet/core/sdk:3.1
+   steps:
+     - checkout
+     - run:
+         name: Restore packages
+         command:
+           dotnet restore
+     - run:
+         name: Build App
+         command:
+           dotnet build
+     - run:
+         name: Run App
+         command:
+           dotnet run
