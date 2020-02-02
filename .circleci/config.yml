@@ -9,11 +9,9 @@ jobs:
          name: Restore packages
          command:
            dotnet restore
+         working_directory: src
      - run:
          name: Build App
          command:
-           dotnet build
-     - run:
-         name: Run App
-         command:
-           dotnet run
+           dotnet build -c Release -o Release
+         working_directory: src
